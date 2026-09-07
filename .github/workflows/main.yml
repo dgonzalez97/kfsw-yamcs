@@ -4,25 +4,43 @@ on:
   push:
   pull_request:
   schedule:
-    - cron: '0 0 * * 0'  # Runs every Sunday at midnight
+    - cron: '0 0 * * 0'
 
 jobs:
-  build:
-    name: Build and Test
+  mission-database:
+    name: Decode a recorded housekeeping frame
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y build-essential
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
 
-      - name: Run make all and wait for Sent
-        run: make wait-for-sent
-        working-directory: ./docker
+      - name: Compile
+        run: ./mvnw -B compile
 
-      - name: Archive all.txt logs
+      - name: Start Yamcs and decode the recorded frame
+        run: |
+          # One step, because a server backgrounded in an earlier step is not
+          # promised to still be there in a later one.
+          ./mvnw -B yamcs:run > yamcs.log 2>&1 &
+          for _ in $(seq 1 90); do
+            curl -sf http://localhost:8090/api/mdb/kfsw >/dev/null && break
+            sleep 2
+          done
+          if ! curl -sf http://localhost:8090/api/mdb/kfsw >/dev/null; then
+            echo "Yamcs did not answer within three minutes"
+            tail -80 yamcs.log
+            exit 1
+          fi
+          ./scripts/check-mdb.sh
+
+      - name: Keep the log
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          path: /quickstart/docker/all.txt
+          name: yamcs-log
+          path: yamcs.log

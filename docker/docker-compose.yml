@@ -19,7 +19,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
-      - quickstart
+      - kfsw
 networks:
-  quickstart:
+  kfsw:
     driver: bridge

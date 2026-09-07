@@ -1,59 +1,78 @@
-# Yamcs QuickStart
+# K-FSW Mission Control
 
-This repository holds the source code to start a basic Yamcs application that monitors a simulated spacecraft in low earth orbit.
+The ground half of K-FSW housekeeping: a [Yamcs](https://yamcs.org/) instance
+that keeps what comes down, so a pass can be read after it ends.
 
-You may find it useful as a starting point for your own project.
+Forked from [yamcs/quickstart](https://github.com/yamcs/quickstart) and kept
+deliberately small. The upstream simulator, its test data and its example Java
+are gone; what is left is one telemetry link and one mission database.
 
+## Why this exists
 
-## Prerequisites
+A K-FSW node collects a housekeeping report — a named set of parameter values,
+sampled together and served in one packet — and answers when asked. Until this,
+nothing on the ground kept the answer. A pass was read on a console and lost,
+and the history the node's ring held collapsed the moment the terminal
+scrolled.
 
-* Java 17+
-* Linux x64/aarch64, macOS x64/aarch64, or Windows x64
+The interesting part is not that Yamcs stores telemetry. It is that a
+housekeeping frame carries **no names**: values back to back in the order the
+report was defined, and nothing in the packet says what they are. That is the
+right trade for a radio and it means the two ends have to agree out of band.
+So the mission database here is generated, not written, from the same file in
+[k-fsw](https://github.com/dgonzalez97/k-fsw) that tells the node what to
+collect.
 
-A copy of Maven is also required, however this gets automatically downloaded an installed by using the `./mvnw` shell script as detailed below.
-
-
-## Running Yamcs
-
-Here are some commands to get things started:
-
-Compile this project:
-
-    ./mvnw compile
-
-Start Yamcs on localhost:
+## Running it
 
     ./mvnw yamcs:run
 
-Same as yamcs:run, but allows a debugger to attach at port 7896:
+Then open <http://localhost:8090>. Nothing arrives on its own — housekeeping is
+pull-only — so ask a node for samples with the bridge in k-fsw:
 
-    ./mvnw yamcs:debug
-    
-Delete all generated outputs and start over:
+    tools/ground/hk-bridge.py --device /dev/pts/7 --node 1 --report 0
 
-    ./mvnw clean
+The bridge speaks CSP over KISS on the host, pulls samples, and forwards each
+one to the UDP link on port 10015. It decodes nothing: frames go on byte for
+byte, and what a value means lives in the database here.
 
-This will also delete Yamcs data. Change the `dataDir` property in `yamcs.yaml` to another location on your file system if you don't want that.
+## What is in the packets
 
+Every datagram is a 12-byte envelope the bridge adds, then the frame the node
+sent:
 
-## Telemetry
+```
+ 0  u64  Unix milliseconds   the node's own clock, or the host's if it is unset
+ 8  u32  sequence
+12  u8   protocol version
+13  u8   report id           which container this is
+14  u16  sequence            per report; a gap here is a lost sample
+16  u32  UTC seconds         when collection started, 0 if the clock is unset
+20  u8   entry count
+21  u8   flags               bit 0: a value was absent and zero-filled
+22  ...  values, big endian, widths fixed by the report definition
+```
 
-To start pushing CCSDS packets into Yamcs, run the included Python script:
+The envelope exists because Yamcs reads an 8-byte time and a 4-byte count at
+fixed offsets and the frame carries 4 and 2. Without it a pull of sixteen
+samples would all land at one reception instant, and the history would collapse
+into a single moment in the archive.
 
-    python simulator.py
+## Regenerating the mission database
 
-This script will send packets at 1 Hz over UDP to Yamcs. There is enough test data to run for a full calendar day.
+From a k-fsw checkout:
 
-The packets are a bit artificial and include a mixture of HK and accessory data.
+    tools/ground/hk-report.py ground-station/reports/nucleo-temperature.yaml \
+        xtce -o ground-station/yamcs/src/main/yamcs/mdb/kfsw-hk.xml
 
+The same file emits the `hk define` line the node is given, and `hk-report.py
+check` compares it against a node's own `param list`. Do not edit
+`mdb/kfsw-hk.xml` by hand.
 
-## Telecommanding
+## Tests
 
-This project defines a few example CCSDS telecommands. They are sent to UDP port 10025. The simulator.py script listens to this port. Commands  have no side effects. The script will only count them.
+    ./scripts/check-mdb.sh
 
-
-## Bundling
-
-Running through Maven is useful during development, but it is not recommended for production environments. Instead bundle up your Yamcs application in a tar.gz file:
-
-    ./mvnw package
+Pushes a housekeeping frame recorded off a real node into a running instance
+and reads the values back out. Loading a database is not evidence that it
+decodes anything; this is. It runs on every push.

@@ -11,3 +11,4 @@
 
 # Docker logs for CI
 docker/all.log
+yamcs-data/
