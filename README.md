@@ -77,6 +77,30 @@ The same file emits the `hk define` line the node is given, and `hk-report.py
 check` compares it against a node's own `param list`. Do not edit
 `mdb/kfsw-hk.xml` by hand.
 
+## Why the bridge is not in here
+
+A reasonable question, since it exists to feed Yamcs. It stays in
+[k-fsw](https://github.com/dgonzalez97/k-fsw) for two reasons.
+
+It is K-FSW protocol code. `hk-bridge.py` frames CSP version 2 over KISS with a
+CRC-32C on each of two layers — that is K-FSW's wire format, and it belongs in
+the repository that defines it, beside the C that has to agree with it.
+
+And it is tested against a node. `tests/hk-yamcs-smoke.sh` runs in k-fsw's
+integration stage and asserts the bytes the bridge pulls off a link are the
+bytes the node's own shell prints for the same sample. That test needs flight
+software, which this repository does not have and should not: **the only thing
+stopping a host decoder drifting from the implementation it decodes is a test
+that runs both**, and moving the bridge here would move it out of reach of
+that test.
+
+So the line is drawn at what a thing knows. Anything that knows about Yamcs —
+the instance configuration, the generated mission database, the parameter
+lists, the recorded frame the database is checked against — lives here.
+Anything that knows about CSP lives in k-fsw. The generator straddles it by
+design, because a housekeeping frame carries no names and something has to
+write down what both ends agreed.
+
 ## Tests
 
     ./scripts/check-mdb.sh
