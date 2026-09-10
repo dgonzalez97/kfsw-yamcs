@@ -26,8 +26,16 @@ collect.
 ## Running it
 
     ./mvnw yamcs:run
+    ./scripts/setup.sh
 
-Then open <http://localhost:8090>. Nothing arrives on its own — housekeeping is
+Then open <http://localhost:8090>.
+
+`setup.sh` creates the parameter lists — **Housekeeping**, the five values the
+node collects, and **Housekeeping frame**, the sequence, timestamp and flags
+from each sample's header. Yamcs keeps those in its own database, so a fresh
+checkout or a `mvn clean` starts without them; making them from a script means
+what an operator opens is described here rather than in somebody's local
+database. It is safe to run again. Nothing arrives on its own — housekeeping is
 pull-only — so ask a node for samples with the bridge in k-fsw:
 
     tools/ground/hk-bridge.py --device /dev/pts/7 --node 1 --report 0
