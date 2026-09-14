@@ -1,12 +1,8 @@
 #!/usr/bin/env bash
-# Create the things a fresh instance does not come with.
+# Creates the parameter lists a fresh Yamcs instance doesn't have. Yamcs keeps
+# them in its own database, so `mvn clean` or a new checkout starts without them.
 #
-# Yamcs keeps parameter lists in its own database, so a `mvn clean` or a new
-# checkout starts without them. Making them here rather than by hand in the web
-# interface means everyone gets the same ones, and that what an operator opens
-# is described in the repository rather than in somebody's local database.
-#
-# Safe to run repeatedly: an existing list of the same name is left alone.
+# Safe to run again: an existing list with the same name is left alone.
 
 set -euo pipefail
 
@@ -46,15 +42,13 @@ make_list()
 
 echo "SETUP: parameter lists"
 
-# What the node actually collects, so opening Yamcs shows the report together
-# rather than leaving an operator to find five parameters among the system ones.
+# The values the node collects, in one list.
 make_list "Housekeeping" \
 	"The nucleo_temperature report, as the node collects it" \
 	'["/kfsw/nucleo_temperature_*"]'
 
-# The header of every sample. Worth its own list: hk_flags and hk_seconds are
-# how you tell a value that is missing from one that is genuinely zero, and
-# hk_sequence is how you see that a sample was lost rather than never taken.
+# The header fields of every sample. hk_flags and hk_seconds show whether a
+# value is missing, and hk_sequence shows lost samples.
 make_list "Housekeeping frame" \
 	"Sequence, timestamp and flags from each sample's header" \
 	'["/kfsw/hk_*", "/kfsw/gs_*"]'

@@ -75,7 +75,7 @@
 				<LongDescription>Housekeeping protocol version.</LongDescription>
 			</Parameter>
 			<Parameter name="hk_report" parameterTypeRef="hk_u8_type">
-				<LongDescription>Which report this sample belongs to.</LongDescription>
+				<LongDescription>Report ID of this sample.</LongDescription>
 			</Parameter>
 			<Parameter name="hk_sequence" parameterTypeRef="hk_u16_type">
 				<LongDescription>Per-report counter. A gap here is a lost sample, not a lost value.</LongDescription>

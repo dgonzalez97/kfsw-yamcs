@@ -1,12 +1,8 @@
 #!/usr/bin/env bash
-# Assert the mission database still decodes a real housekeeping frame.
+# Checks that the mission database decodes a housekeeping frame recorded from a
+# node.
 #
-# The database is generated from the parameter tables in k-fsw, so most of what
-# can go wrong here goes wrong silently: a container that no longer matches, a
-# width off by a byte, a calibrator dropped. Loading is not evidence. Decoding
-# a frame that a node actually produced is.
-#
-# Expects Yamcs already running and answering on $YAMCS.
+# Expects Yamcs to be running and answering on $YAMCS.
 
 set -euo pipefail
 
@@ -42,9 +38,8 @@ present "containers/kfsw/nucleo_temperature"
 present "parameters/kfsw/hk_sequence"
 present "parameters/kfsw/nucleo_temperature_temp_mcu"
 
-# A frame recorded off a hosted node: no sensor, so the temperature is the
-# reserved value and temp_valid says so. Uptime and the free-buffer count are
-# real, and they are what this asserts on.
+# A frame recorded from a hosted node. There is no sensor, so the temperature is
+# the reserved value and temp_valid is 0; the uptime and free buffers are real.
 python3 - "$SAMPLE" <<'PY'
 import socket, struct, sys, time
 frame = bytes.fromhex(open(sys.argv[1]).read().strip())
