@@ -1,37 +1,32 @@
-# Yamcs QuickStart's Docker and Makefile
+# Docker
 
-This folder contains content to run yamcs in a docker container
+Runs Yamcs in a Docker container.
 
 ## Prerequisites
 
 * make
 * docker
-* docker-compose
+* docker compose
 
-## Builing, running, and simulating data in Yamcs
+## Commands
 
-Here are some commands to get things started:
-
-To list available make targets:
+List the make targets:
 
     make
 
-To run the all target:
+Clean, start Yamcs and check the database:
 
     make all
 
-To bring up yamcs container:
+Start or stop the container:
 
     make yamcs-up
-
-To bring down yamcs container:
-
     make yamcs-down
 
-To run simulator by connecting to container:
+Send the recorded frame and read the values back:
 
-    make yamcs-simulator
+    make yamcs-check
 
-To shell into yamcs container:
+Open a shell in the container:
 
     make yamcs-shell

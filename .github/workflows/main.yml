@@ -25,8 +25,8 @@ jobs:
 
       - name: Start Yamcs and decode the recorded frame
         run: |
-          # One step, because a server backgrounded in an earlier step is not
-          # promised to still be there in a later one.
+          # Start Yamcs and run the check in one step, so the server is still
+          # running for the check.
           ./mvnw -B yamcs:run > yamcs.log 2>&1 &
           for _ in $(seq 1 90); do
             curl -sf http://localhost:8090/api/mdb/kfsw >/dev/null && break
